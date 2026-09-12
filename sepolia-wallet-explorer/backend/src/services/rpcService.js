@@ -47,7 +47,17 @@ const checkRpcHealth = async () => {
   }
 };
 
+const getTransactionReceipt = async (hash) => {
+  try {
+    const provider = getProvider();
+    return await provider.getTransactionReceipt(hash);
+  } catch (error) {
+    throw new Error(`Failed to fetch receipt for ${hash}: ${error.message}`);
+  }
+};
+
 module.exports = {
   getProvider,
-  checkRpcHealth
+  checkRpcHealth,
+  getTransactionReceipt
 };
