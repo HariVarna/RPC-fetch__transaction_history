@@ -1,0 +1,11 @@
+{
+  "name": "sepolia-wallet-explorer",
+  "version": "1.0.0",
+  "description": "Sepolia Wallet Transaction Explorer",
+  "scripts": {
+    "start:backend": "cd backend && npm run dev",
+    "start:frontend": "cd frontend && npm run dev"
+  },
+  "author": "",
+  "license": "ISC"
+}
