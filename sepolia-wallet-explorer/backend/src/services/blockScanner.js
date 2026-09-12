@@ -68,7 +68,8 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
             gasPrice: tx.gasPrice ? tx.gasPrice.toString() : '0',
             nonce: tx.nonce,
             type: tx.type,
-            input: tx.data
+            input: tx.data,
+            timestamp: block.timestamp
           });
         }
       }
