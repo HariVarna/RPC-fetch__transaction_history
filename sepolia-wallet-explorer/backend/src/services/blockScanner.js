@@ -49,6 +49,8 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
 
       // 4. Inspect every transaction
       const transactions = block.prefetchedTransactions || [];
+      const blockTimestamp = block.timestamp;
+      const timestamp = new Date(blockTimestamp * 1000).toISOString();
 
       for (const tx of transactions) {
         // Handle contract creation transactions where "to" is null
@@ -69,7 +71,8 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
             nonce: tx.nonce,
             type: tx.type,
             input: tx.data,
-            timestamp: block.timestamp
+            timestamp,
+            blockTimestamp
           });
         }
       }

@@ -18,9 +18,20 @@ const TransactionCard = ({ tx, walletAddress }) => {
     }
   };
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp * 1000).toLocaleString();
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'N/A';
+    try {
+      // Handle Unix timestamp in seconds (number or numeric string)
+      if (typeof dateValue === 'number' || (/^\d+$/.test(dateValue) && !isNaN(Number(dateValue)))) {
+        const ms = Number(dateValue) > 1e11 ? Number(dateValue) : Number(dateValue) * 1000;
+        return new Date(ms).toLocaleString();
+      }
+      // Handle ISO timestamp string
+      const date = new Date(dateValue);
+      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
+    } catch {
+      return 'N/A';
+    }
   };
 
   return (
