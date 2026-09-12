@@ -1,12 +1,20 @@
 const { ethers } = require('ethers');
 
+let cachedProvider = null;
+let cachedRpcUrl = null;
+
 const getProvider = () => {
   const rpcUrl = process.env.SEPOLIA_RPC_URL;
   if (!rpcUrl) {
     throw new Error('SEPOLIA_RPC_URL is missing in environment variables');
   }
-  return new ethers.JsonRpcProvider(rpcUrl);
+  if (!cachedProvider || cachedRpcUrl !== rpcUrl) {
+    cachedProvider = new ethers.JsonRpcProvider(rpcUrl);
+    cachedRpcUrl = rpcUrl;
+  }
+  return cachedProvider;
 };
+
 
 const checkRpcHealth = async () => {
   try {

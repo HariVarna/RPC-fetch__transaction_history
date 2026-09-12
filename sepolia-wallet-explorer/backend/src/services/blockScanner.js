@@ -1,17 +1,84 @@
 const { getProvider } = require('./rpcService');
 const { validateAndNormalizeAddress } = require('../utils/addressValidator');
 
+const DEFAULT_CONCURRENCY = 5;
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_BASE_DELAY_MS = 500;
+const DEFAULT_MAX_DELAY_MS = 5000;
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
- * Scans a specific range of blocks for transactions involving a wallet address.
+ * Checks if an error indicates rate limiting.
+ */
+const isRateLimitError = (error) => {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  const code = error.code;
+  const status = error.status || error.statusCode;
+  return (
+    status === 429 ||
+    code === 429 ||
+    code === 'TO_MANY_REQUESTS' ||
+    msg.includes('429') ||
+    msg.includes('rate limit') ||
+    msg.includes('too many requests') ||
+    msg.includes('exceeded')
+  );
+};
+
+/**
+ * Fetches a block with exponential backoff and rate limit handling.
+ */
+const fetchBlockWithRetry = async (provider, blockNumber, options = {}) => {
+  const maxRetries = options.maxRetries !== undefined ? options.maxRetries : DEFAULT_MAX_RETRIES;
+  const baseDelay = options.baseDelay || DEFAULT_BASE_DELAY_MS;
+  const maxDelay = options.maxDelay || DEFAULT_MAX_DELAY_MS;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const block = await provider.getBlock(blockNumber, true);
+      if (!block) {
+        throw new Error(`Block ${blockNumber} not found or returned null`);
+      }
+      return block;
+    } catch (err) {
+      if (attempt === maxRetries) {
+        throw new Error(`Failed to fetch block ${blockNumber} after ${maxRetries + 1} attempts: ${err.message}`);
+      }
+
+      let delay;
+      if (isRateLimitError(err)) {
+        // Extended exponential backoff for rate limits with jitter
+        delay = Math.min(1500 * Math.pow(2, attempt) + Math.floor(Math.random() * 300), maxDelay * 2);
+      } else {
+        // Standard exponential backoff with jitter
+        delay = Math.min(baseDelay * Math.pow(2, attempt) + Math.floor(Math.random() * 200), maxDelay);
+      }
+
+      if (options.onRetry) {
+        options.onRetry({ blockNumber, attempt: attempt + 1, delay, error: err.message });
+      }
+
+      await sleep(delay);
+    }
+  }
+};
+
+/**
+ * Scans a specific range of blocks for transactions involving a wallet address,
+ * using controlled concurrent batching, retries with exponential backoff, and strict ordering.
  * 
  * @param {Object} params
  * @param {string} params.address - The Ethereum address to scan for.
  * @param {number} params.startBlock - The starting block number (inclusive).
  * @param {number} params.endBlock - The ending block number (inclusive).
+ * @param {number} [params.concurrency] - Optional concurrency override.
  * @param {Function} [params.onProgress] - Optional callback for progress reporting.
+ * @param {Object} [params.retryOptions] - Optional retry settings (maxRetries, baseDelay, maxDelay, onRetry).
  * @returns {Promise<Array>} Array of matching transactions.
  */
-const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress }) => {
+const scanBlocksForAddress = async ({ address, startBlock, endBlock, concurrency, onProgress, retryOptions = {} }) => {
   // 1. Address Validation
   const { valid, normalizedAddress, error } = validateAndNormalizeAddress(address);
   if (!valid) {
@@ -31,26 +98,39 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
     throw new Error('startBlock cannot be greater than endBlock');
   }
 
+  // Determine concurrency limit: explicit param > env variable > default (5)
+  const envConcurrency = parseInt(process.env.RPC_CONCURRENCY, 10);
+  const activeConcurrency = Math.max(1, concurrency || (isNaN(envConcurrency) ? DEFAULT_CONCURRENCY : envConcurrency));
+
   const provider = getProvider();
   const matchingTransactions = [];
+  const seenTxHashes = new Set();
   const totalBlocks = endBlock - startBlock + 1;
+  let processedBlocks = 0;
 
-  // 3. Scan Each Block
-  for (let i = 0; i < totalBlocks; i++) {
-    const currentBlock = startBlock + i;
-    
-    try {
-      // Retrieve the complete block with transactions (pass true for prefetch)
-      const block = await provider.getBlock(currentBlock, true);
-      
-      if (!block) {
-        throw new Error(`Block ${currentBlock} not found or returned null`);
-      }
+  // 3. Process in batches with controlled concurrency
+  for (let batchStart = startBlock; batchStart <= endBlock; batchStart += activeConcurrency) {
+    const batchEnd = Math.min(batchStart + activeConcurrency - 1, endBlock);
+    const batchBlockNumbers = [];
+    for (let b = batchStart; b <= batchEnd; b++) {
+      batchBlockNumbers.push(b);
+    }
 
-      // 4. Inspect every transaction
+    // Fetch batch concurrently with individual block retries
+    const batchBlocks = await Promise.all(
+      batchBlockNumbers.map(blockNum => fetchBlockWithRetry(provider, blockNum, retryOptions))
+    );
+
+    // 4. Ensure batch blocks are ordered by blockNumber ascending
+    batchBlocks.sort((a, b) => Number(a.number) - Number(b.number));
+
+    // 5. Extract matching transactions for each block in order
+    for (const block of batchBlocks) {
       const transactions = block.prefetchedTransactions || [];
       const blockTimestamp = block.timestamp;
       const timestamp = new Date(blockTimestamp * 1000).toISOString();
+
+      const blockMatches = [];
 
       for (const tx of transactions) {
         // Handle contract creation transactions where "to" is null
@@ -59,7 +139,7 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
 
         // Match case-insensitively
         if (from === normalizedAddress || to === normalizedAddress) {
-          matchingTransactions.push({
+          blockMatches.push({
             hash: tx.hash,
             blockNumber: tx.blockNumber,
             transactionIndex: tx.index,
@@ -77,18 +157,32 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
         }
       }
 
-      // 5. Progress Reporting
+      // Ensure transactions within the block are ordered by transactionIndex ascending
+      blockMatches.sort((a, b) => a.transactionIndex - b.transactionIndex);
+
+      // Append and avoid duplicates
+      for (const match of blockMatches) {
+        const lowerHash = match.hash.toLowerCase();
+        if (!seenTxHashes.has(lowerHash)) {
+          seenTxHashes.add(lowerHash);
+          matchingTransactions.push(match);
+        }
+      }
+
+      processedBlocks++;
+
+      // Progress reporting
       if (onProgress) {
         onProgress({
-          currentBlock,
+          currentBlock: block.number,
           startBlock,
           endBlock,
-          percentageComplete: Math.round(((i + 1) / totalBlocks) * 100),
+          processedBlocks,
+          totalBlocks,
+          percentageComplete: Math.round((processedBlocks / totalBlocks) * 100),
           matchingTransactionsCount: matchingTransactions.length
         });
       }
-    } catch (err) {
-      throw new Error(`Error scanning block ${currentBlock}: ${err.message}`);
     }
   }
 
@@ -96,5 +190,7 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, onProgress 
 };
 
 module.exports = {
-  scanBlocksForAddress
+  scanBlocksForAddress,
+  fetchBlockWithRetry,
+  isRateLimitError
 };
