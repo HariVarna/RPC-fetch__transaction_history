@@ -1,10 +1,12 @@
-const { getProvider } = require('./rpcService');
+const { getProvider, withTimeout } = require('./rpcService');
 const { validateAndNormalizeAddress } = require('../utils/addressValidator');
+const { sanitize } = require('../utils/sanitizer');
 
 const DEFAULT_CONCURRENCY = 5;
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_BASE_DELAY_MS = 500;
 const DEFAULT_MAX_DELAY_MS = 5000;
+const BLOCK_FETCH_TIMEOUT_MS = 10000;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -28,23 +30,31 @@ const isRateLimitError = (error) => {
 };
 
 /**
- * Fetches a block with exponential backoff and rate limit handling.
+ * Fetches a block with timeout, exponential backoff, and rate limit handling.
  */
 const fetchBlockWithRetry = async (provider, blockNumber, options = {}) => {
   const maxRetries = options.maxRetries !== undefined ? options.maxRetries : DEFAULT_MAX_RETRIES;
   const baseDelay = options.baseDelay || DEFAULT_BASE_DELAY_MS;
   const maxDelay = options.maxDelay || DEFAULT_MAX_DELAY_MS;
+  const timeoutMs = options.timeoutMs || BLOCK_FETCH_TIMEOUT_MS;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const block = await provider.getBlock(blockNumber, true);
+      const blockPromise = provider.getBlock(blockNumber, true);
+      const block = await (withTimeout ? withTimeout(blockPromise, timeoutMs, `eth_getBlockByNumber(${blockNumber})`) : blockPromise);
+      
       if (!block) {
         throw new Error(`Block ${blockNumber} not found or returned null`);
       }
+      if (typeof block !== 'object' || block.number === undefined || block.number === null) {
+        throw new Error(`Block ${blockNumber} returned malformed response`);
+      }
+
       return block;
     } catch (err) {
+      const sanitizedErr = sanitize(err.message);
       if (attempt === maxRetries) {
-        throw new Error(`Failed to fetch block ${blockNumber} after ${maxRetries + 1} attempts: ${err.message}`);
+        throw new Error(`Failed to fetch block ${blockNumber} after ${maxRetries + 1} attempts: ${sanitizedErr}`);
       }
 
       let delay;
@@ -57,7 +67,7 @@ const fetchBlockWithRetry = async (provider, blockNumber, options = {}) => {
       }
 
       if (options.onRetry) {
-        options.onRetry({ blockNumber, attempt: attempt + 1, delay, error: err.message });
+        options.onRetry({ blockNumber, attempt: attempt + 1, delay, error: sanitizedErr });
       }
 
       await sleep(delay);
@@ -133,9 +143,10 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, concurrency
       const blockMatches = [];
 
       for (const tx of transactions) {
+        if (!tx || typeof tx !== 'object' || !tx.hash) continue;
         // Handle contract creation transactions where "to" is null
-        const from = tx.from ? tx.from.toLowerCase() : null;
-        const to = tx.to ? tx.to.toLowerCase() : null;
+        const from = tx.from ? String(tx.from).toLowerCase() : null;
+        const to = tx.to ? String(tx.to).toLowerCase() : null;
 
         // Match case-insensitively
         if (from === normalizedAddress || to === normalizedAddress) {

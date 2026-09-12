@@ -1,5 +1,6 @@
 const blockScanner = require('./blockScanner');
 const rpcService = require('./rpcService');
+const { safeLogger, sanitize } = require('../utils/sanitizer');
 
 /**
  * Fetches transactions and their corresponding receipts for a given address in a block range.
@@ -21,16 +22,16 @@ const fetchWalletTransactions = async ({ address, startBlock, endBlock, onProgre
         logs: []
       };
 
-      if (receipt) {
-        if (receipt.status === 1) status = 'SUCCESS';
-        else if (receipt.status === 0) status = 'FAILED';
+      if (receipt && typeof receipt === 'object') {
+        if (receipt.status === 1 || receipt.status === '0x1') status = 'SUCCESS';
+        else if (receipt.status === 0 || receipt.status === '0x0') status = 'FAILED';
 
         receiptData = {
           gasUsed: receipt.gasUsed ? receipt.gasUsed.toString() : null,
           // Ethers v6 maps effectiveGasPrice from the raw receipt to gasPrice on the Receipt object
           effectiveGasPrice: receipt.gasPrice ? receipt.gasPrice.toString() : null,
           contractAddress: receipt.contractAddress || null,
-          logs: receipt.logs || []
+          logs: Array.isArray(receipt.logs) ? receipt.logs : []
         };
       } else {
         // Handle null receipt safely (e.g. if node doesn't have it yet or it's dropped)
@@ -43,7 +44,7 @@ const fetchWalletTransactions = async ({ address, startBlock, endBlock, onProgre
         receipt: receiptData
       };
     } catch (err) {
-      console.error(`Error fetching receipt for ${tx.hash}:`, err.message);
+      safeLogger.error(`Error fetching receipt for ${tx.hash}:`, sanitize(err.message));
       return {
         ...tx,
         status: 'ERROR',
