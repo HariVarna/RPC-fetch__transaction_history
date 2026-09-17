@@ -87,8 +87,8 @@ const TransactionCard = ({ tx, walletAddress }) => {
              <span className="block text-gray-500 mb-1 text-xs uppercase tracking-wider">Gas Price</span>
              <span className="text-gray-300">
                {tx.receipt?.effectiveGasPrice 
-                 ? `${(Number(tx.receipt.effectiveGasPrice) / 1e9).toFixed(2)} Gwei` 
-                 : (tx.gasPrice ? `${(Number(tx.gasPrice) / 1e9).toFixed(2)} Gwei` : 'N/A')}
+                 ? `${Number(ethers.formatUnits(tx.receipt.effectiveGasPrice, 'gwei')).toFixed(2)} Gwei` 
+                 : (tx.gasPrice ? `${Number(ethers.formatUnits(tx.gasPrice, 'gwei')).toFixed(2)} Gwei` : 'N/A')}
              </span>
           </div>
         </div>

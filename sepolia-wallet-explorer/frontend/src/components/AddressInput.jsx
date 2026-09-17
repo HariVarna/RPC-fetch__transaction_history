@@ -14,7 +14,7 @@ const AddressInput = ({ address, setAddress, startBlock, setStartBlock, endBlock
         />
       </div>
       
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <label className="block text-sm text-gray-400 mb-1 ml-1">Start Block</label>
           <input
@@ -32,7 +32,7 @@ const AddressInput = ({ address, setAddress, startBlock, setStartBlock, endBlock
             type="number"
             value={endBlock}
             onChange={(e) => setEndBlock(e.target.value)}
-            placeholder="e.g. 6000100"
+            placeholder="e.g. 6000010"
             disabled={loading}
             className="w-full px-4 py-3 rounded-lg bg-gray-800/80 border border-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:outline-none transition-all shadow-md disabled:opacity-50"
           />
@@ -41,7 +41,7 @@ const AddressInput = ({ address, setAddress, startBlock, setStartBlock, endBlock
           <button
             type="submit"
             disabled={loading}
-            className="px-8 py-3 h-[50px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-50 flex items-center justify-center min-w-[160px]"
+            className="w-full sm:w-auto px-8 py-3 h-[50px] bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-50 flex items-center justify-center min-w-[160px] cursor-pointer disabled:cursor-not-allowed"
           >
             {loading ? 'Scanning...' : 'Fetch Transactions'}
           </button>

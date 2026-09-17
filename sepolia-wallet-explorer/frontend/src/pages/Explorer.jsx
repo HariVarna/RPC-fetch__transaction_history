@@ -17,8 +17,16 @@ const Explorer = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!address || !address.trim()) {
+    const trimmedAddress = address.trim();
+
+    if (!trimmedAddress) {
       setError('Ethereum address is required');
+      setData(null);
+      return;
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(trimmedAddress)) {
+      setError('Invalid Ethereum address format. Must be a 42-character hexadecimal string starting with 0x.');
       setData(null);
       return;
     }
@@ -28,13 +36,34 @@ const Explorer = () => {
       setData(null);
       return;
     }
+
+    const start = Number(startBlock);
+    const end = Number(endBlock);
+
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < 0) {
+      setError('Start Block and End Block must be valid non-negative integers');
+      setData(null);
+      return;
+    }
+
+    if (start > end) {
+      setError('Start Block cannot be greater than End Block');
+      setData(null);
+      return;
+    }
+
+    if (end - start + 1 > 50) {
+      setError(`Block range cannot exceed 50 blocks (requested: ${end - start + 1} blocks)`);
+      setData(null);
+      return;
+    }
     
     setLoading(true);
     setError('');
     setData(null);
 
     try {
-      const result = await fetchWalletTransactions(address, startBlock, endBlock);
+      const result = await fetchWalletTransactions(trimmedAddress, start, end);
       setData(result);
     } catch (err) {
       setError(err.message);
