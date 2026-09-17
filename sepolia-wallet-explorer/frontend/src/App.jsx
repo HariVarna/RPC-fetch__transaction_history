@@ -4,7 +4,7 @@ import './index.css';
 
 function App() {
   return (
-    <div className="App selection:bg-purple-500/30">
+    <div className="App selection:bg-white selection:text-black min-h-screen bg-black text-white">
       <Explorer />
     </div>
   );

@@ -80,17 +80,20 @@ const Explorer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-8 flex flex-col items-center">
-      <header className="max-w-4xl w-full text-center mt-8 mb-10">
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-teal-300 mb-3 drop-shadow-sm">
+    <div className="min-h-screen bg-black text-white p-4 sm:p-8 flex flex-col items-center">
+      <header className="max-w-4xl w-full text-center mt-6 mb-8 pb-6 border-b border-white/20">
+        <div className="inline-flex items-center justify-center px-3 py-1 mb-4 rounded border border-white text-xs font-mono uppercase tracking-widest bg-black text-white">
+          Sepolia Blockchain / JSON-RPC Explorer
+        </div>
+        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase mb-3">
           Sepolia Explorer
         </h1>
-        <p className="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
-          Deep-scan the Sepolia blockchain using pure JSON-RPC. Discover transactions, inspect execution receipts, and monitor balances.
+        <p className="text-neutral-400 text-sm sm:text-base max-w-2xl mx-auto font-sans">
+          Pure JSON-RPC transaction scanner and wallet intelligence. Direct blockchain inspection with zero centralized indexing.
         </p>
       </header>
 
-      <main className="w-full max-w-6xl">
+      <main className="w-full max-w-6xl space-y-6">
         <AddressInput 
           address={address}
           setAddress={setAddress}
@@ -113,6 +116,10 @@ const Explorer = () => {
           </>
         )}
       </main>
+
+      <footer className="mt-16 pt-6 border-t border-white/10 w-full max-w-6xl text-center text-xs text-neutral-500 font-mono">
+        Sepolia JSON-RPC 2.0 • 2D Monochrome Theme
+      </footer>
     </div>
   );
 };

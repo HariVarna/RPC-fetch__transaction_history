@@ -10,21 +10,20 @@ const WalletSummary = ({ data }) => {
   const etherscanUrl = `https://sepolia.etherscan.io/address/${data.address}`;
 
   return (
-    <div className="w-full max-w-6xl mx-auto mb-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Main Account Overview Card */}
-      <div className="bg-gray-800/60 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-gray-700/50">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-700/40">
+    <div className="w-full max-w-6xl mx-auto space-y-4 font-mono">
+      {/* 2D Flat Account Overview Box */}
+      <div className="bg-black border-2 border-white p-5 sm:p-6 shadow-none">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-neutral-800">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-0.5 rounded-full border border-purple-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] uppercase tracking-widest bg-white text-black px-2 py-0.5 font-bold">
                 Sepolia Account
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Connected
+              <span className="text-[11px] uppercase tracking-widest border border-white text-white px-2 py-0.5">
+                ● Live RPC
               </span>
             </div>
-            <h2 className="text-lg font-mono text-gray-200 mt-2 break-all" title={data.address}>
+            <h2 className="text-base sm:text-lg text-white font-mono break-all" title={data.address}>
               {data.address}
             </h2>
           </div>
@@ -33,79 +32,50 @@ const WalletSummary = ({ data }) => {
             href={etherscanUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 hover:text-blue-300 transition-colors whitespace-nowrap self-start sm:self-auto"
+            className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3.5 py-2 bg-transparent text-white border border-white hover:bg-white hover:text-black transition-colors whitespace-nowrap self-start sm:self-auto"
           >
             <span>View on Etherscan</span>
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <span>↗</span>
           </a>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gray-900/60 rounded-xl p-4 border border-gray-700/30">
-            <span className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-black p-4 border border-neutral-800">
+            <span className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">
               ETH Balance
             </span>
-            <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-300">
+            <span className="text-xl font-bold text-white">
               {balanceEth}
             </span>
           </div>
 
-          <div className="bg-gray-900/60 rounded-xl p-4 border border-gray-700/30">
-            <span className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-              Total Outgoing Txns
+          <div className="bg-black p-4 border border-neutral-800">
+            <span className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">
+              Outgoing Nonce
             </span>
-            <span className="text-lg font-bold text-purple-400">
+            <span className="text-xl font-bold text-white">
               {data.account?.nonce !== undefined ? data.account.nonce.toLocaleString() : '0'}
             </span>
           </div>
 
-          <div className="bg-gray-900/60 rounded-xl p-4 border border-gray-700/30">
-            <span className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-              Scanned Range
+          <div className="bg-black p-4 border border-neutral-800">
+            <span className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">
+              Block Range
             </span>
-            <span className="font-mono text-sm text-blue-300">
+            <span className="text-sm font-bold text-neutral-200">
               {data.startBlock} → {data.endBlock}
             </span>
           </div>
 
-          <div className="bg-gray-900/60 rounded-xl p-4 border border-gray-700/30">
-            <span className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-              Txns in Range
+          <div className="bg-black p-4 border border-neutral-800">
+            <span className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">
+              Txns Found
             </span>
-            <span className="text-lg font-bold text-amber-400">
+            <span className="text-xl font-bold text-white">
               {data.transactionCount}
             </span>
           </div>
         </div>
-
-        {/* Notice for Large Block Ranges */}
-        {data.isWindowClamped && (
-          <div className="mt-4 p-4 rounded-xl bg-blue-950/40 border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-blue-200">
-            <div className="flex items-start gap-2.5">
-              <svg className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <p className="font-semibold text-blue-100 mb-0.5">
-                  Large Range Auto-Windowed ({data.originalStartBlock?.toLocaleString()} → {data.originalEndBlock?.toLocaleString()})
-                </p>
-                <p className="text-blue-300/80">
-                  {data.rangeNotice || `Scanned the 50 most recent blocks in your requested range (${data.startBlock} → ${data.endBlock}) to ensure instant response without node timeouts.`}
-                </p>
-              </div>
-            </div>
-            <a
-              href={`https://sepolia.etherscan.io/address/${data.address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-400/40 font-medium whitespace-nowrap self-start sm:self-auto transition-colors"
-            >
-              Full Range on Etherscan ↗
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
