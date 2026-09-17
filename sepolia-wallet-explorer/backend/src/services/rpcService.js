@@ -7,9 +7,12 @@ let cachedRpcUrl = null;
 const DEFAULT_RPC_TIMEOUT_MS = 10000;
 
 const getProvider = () => {
+  if (!process.env.SEPOLIA_RPC_URL) {
+    require('dotenv').config();
+  }
   const rpcUrl = process.env.SEPOLIA_RPC_URL;
   if (!rpcUrl) {
-    throw new Error('SEPOLIA_RPC_URL is missing in environment variables');
+    throw new Error('SEPOLIA_RPC_URL is missing in environment variables. Please check your backend/.env configuration.');
   }
   if (!cachedProvider || cachedRpcUrl !== rpcUrl) {
     cachedProvider = new ethers.JsonRpcProvider(rpcUrl);

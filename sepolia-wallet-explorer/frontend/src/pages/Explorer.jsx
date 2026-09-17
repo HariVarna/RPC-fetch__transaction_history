@@ -31,31 +31,38 @@ const Explorer = () => {
       return;
     }
 
-    if (startBlock === '' || endBlock === '') {
-      setError('Both Start Block and End Block are required');
-      setData(null);
-      return;
-    }
+    const hasStart = startBlock !== '' && startBlock !== undefined && startBlock !== null;
+    const hasEnd = endBlock !== '' && endBlock !== undefined && endBlock !== null;
 
-    const start = Number(startBlock);
-    const end = Number(endBlock);
+    let start = null;
+    let end = null;
 
-    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < 0) {
-      setError('Start Block and End Block must be valid non-negative integers');
-      setData(null);
-      return;
-    }
+    if (hasStart || hasEnd) {
+      if (hasStart) {
+        start = Number(startBlock);
+        if (!Number.isInteger(start) || start < 0) {
+          setError('Start Block must be a valid non-negative integer');
+          setData(null);
+          return;
+        }
+      }
 
-    if (start > end) {
-      setError('Start Block cannot be greater than End Block');
-      setData(null);
-      return;
-    }
+      if (hasEnd) {
+        end = Number(endBlock);
+        if (!Number.isInteger(end) || end < 0) {
+          setError('End Block must be a valid non-negative integer');
+          setData(null);
+          return;
+        }
+      }
 
-    if (end - start + 1 > 50) {
-      setError(`Block range cannot exceed 50 blocks (requested: ${end - start + 1} blocks)`);
-      setData(null);
-      return;
+      if (hasStart && hasEnd) {
+        if (start > end) {
+          setError('Start Block cannot be greater than End Block');
+          setData(null);
+          return;
+        }
+      }
     }
     
     setLoading(true);
@@ -74,16 +81,16 @@ const Explorer = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-8 flex flex-col items-center">
-      <header className="max-w-3xl w-full text-center mt-12 mb-12">
-        <h1 className="text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-4 drop-shadow-sm">
+      <header className="max-w-4xl w-full text-center mt-8 mb-10">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-teal-300 mb-3 drop-shadow-sm">
           Sepolia Explorer
         </h1>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Deep-scan the Sepolia blockchain using pure JSON-RPC. Discover transactions without relying on centralized indexers.
+        <p className="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
+          Deep-scan the Sepolia blockchain using pure JSON-RPC. Discover transactions, inspect execution receipts, and monitor balances.
         </p>
       </header>
 
-      <main className="w-full">
+      <main className="w-full max-w-6xl">
         <AddressInput 
           address={address}
           setAddress={setAddress}

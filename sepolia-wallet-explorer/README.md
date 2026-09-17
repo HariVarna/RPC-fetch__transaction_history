@@ -256,8 +256,8 @@ Scans a range of Sepolia blocks for transactions involving a specific address an
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `address` | `string` | **Yes** | 42-character hexadecimal Ethereum address (e.g. `0x110b9CaCcbC6089fBb7c865E0531Be1b72d39A4c`). |
-| `startBlock` | `number` | **Yes** | Starting block number (inclusive non-negative integer). |
-| `endBlock` | `number` | **Yes** | Ending block number (inclusive, `endBlock >= startBlock`, range `<= 50`). |
+| `startBlock` | `number` | **No** | Starting block number (defaults to `latestBlock - 19` if omitted). |
+| `endBlock` | `number` | **No** | Ending block number (defaults to latest Sepolia block height if omitted). Range cannot exceed 50 blocks. |
 
 #### Example Request
 ```http

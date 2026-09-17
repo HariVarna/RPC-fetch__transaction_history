@@ -40,8 +40,38 @@ const fetchBlockWithRetry = async (provider, blockNumber, options = {}) => {
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const blockPromise = provider.getBlock(blockNumber, true);
-      const block = await (withTimeout ? withTimeout(blockPromise, timeoutMs, `eth_getBlockByNumber(${blockNumber})`) : blockPromise);
+      let block;
+      if (typeof provider.send === 'function') {
+        const hexBlock = '0x' + blockNumber.toString(16);
+        const raw = await (withTimeout 
+          ? withTimeout(provider.send('eth_getBlockByNumber', [hexBlock, true]), timeoutMs, `eth_getBlockByNumber(${blockNumber})`) 
+          : provider.send('eth_getBlockByNumber', [hexBlock, true]));
+        
+        if (!raw) {
+          throw new Error(`Block ${blockNumber} not found or returned null`);
+        }
+        
+        block = {
+          number: typeof raw.number === 'string' ? parseInt(raw.number, 16) : raw.number,
+          timestamp: typeof raw.timestamp === 'string' ? parseInt(raw.timestamp, 16) : raw.timestamp,
+          prefetchedTransactions: (raw.transactions || []).map((t, idx) => ({
+            hash: t.hash,
+            blockNumber: typeof t.blockNumber === 'string' ? parseInt(t.blockNumber, 16) : (t.blockNumber || blockNumber),
+            index: typeof t.transactionIndex === 'string' ? parseInt(t.transactionIndex, 16) : (t.index !== undefined ? t.index : idx),
+            from: t.from,
+            to: t.to,
+            value: typeof t.value === 'string' ? (t.value.startsWith('0x') ? BigInt(t.value).toString() : t.value) : (t.value ? t.value.toString() : '0'),
+            gasLimit: typeof t.gas === 'string' ? (t.gas.startsWith('0x') ? BigInt(t.gas).toString() : t.gas) : (t.gasLimit ? t.gasLimit.toString() : '0'),
+            gasPrice: typeof t.gasPrice === 'string' ? (t.gasPrice.startsWith('0x') ? BigInt(t.gasPrice).toString() : t.gasPrice) : (t.gasPrice ? t.gasPrice.toString() : '0'),
+            nonce: typeof t.nonce === 'string' ? (t.nonce.startsWith('0x') ? parseInt(t.nonce, 16) : t.nonce) : t.nonce,
+            type: typeof t.type === 'string' ? (t.type.startsWith('0x') ? parseInt(t.type, 16) : t.type) : t.type,
+            data: t.input || t.data || '0x'
+          }))
+        };
+      } else {
+        const blockPromise = provider.getBlock(blockNumber, true);
+        block = await (withTimeout ? withTimeout(blockPromise, timeoutMs, `eth_getBlockByNumber(${blockNumber})`) : blockPromise);
+      }
       
       if (!block) {
         throw new Error(`Block ${blockNumber} not found or returned null`);

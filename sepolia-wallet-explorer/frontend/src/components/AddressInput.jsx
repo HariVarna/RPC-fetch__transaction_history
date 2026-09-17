@@ -16,23 +16,27 @@ const AddressInput = ({ address, setAddress, startBlock, setStartBlock, endBlock
       
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
-          <label className="block text-sm text-gray-400 mb-1 ml-1">Start Block</label>
+          <label className="block text-sm text-gray-400 mb-1 ml-1">
+            Start Block <span className="text-gray-500 text-xs font-normal">(Optional)</span>
+          </label>
           <input
             type="number"
             value={startBlock}
             onChange={(e) => setStartBlock(e.target.value)}
-            placeholder="e.g. 6000000"
+            placeholder="e.g. 6000000 (blank for latest)"
             disabled={loading}
             className="w-full px-4 py-3 rounded-lg bg-gray-800/80 border border-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:outline-none transition-all shadow-md disabled:opacity-50"
           />
         </div>
         <div className="flex-1">
-          <label className="block text-sm text-gray-400 mb-1 ml-1">End Block</label>
+          <label className="block text-sm text-gray-400 mb-1 ml-1">
+            End Block <span className="text-gray-500 text-xs font-normal">(Optional)</span>
+          </label>
           <input
             type="number"
             value={endBlock}
             onChange={(e) => setEndBlock(e.target.value)}
-            placeholder="e.g. 6000010"
+            placeholder="e.g. 6000010 (blank for latest)"
             disabled={loading}
             className="w-full px-4 py-3 rounded-lg bg-gray-800/80 border border-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/50 focus:outline-none transition-all shadow-md disabled:opacity-50"
           />
@@ -47,6 +51,9 @@ const AddressInput = ({ address, setAddress, startBlock, setStartBlock, endBlock
           </button>
         </div>
       </div>
+      <p className="text-xs text-gray-500 text-center">
+        Leave block range empty to automatically scan the most recent blocks on Sepolia.
+      </p>
     </form>
   );
 };
