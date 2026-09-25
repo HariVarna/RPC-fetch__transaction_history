@@ -1,3 +1,4 @@
+const { ethers } = require('ethers');
 const transactionService = require('../services/transactionService');
 const rpcService = require('../services/rpcService');
 const { validateAndNormalizeAddress } = require('../utils/addressValidator');
@@ -9,7 +10,9 @@ const MAX_BLOCK_NUMBER = 100000000;
 const REQUEST_TIMEOUT_MS = 60000;
 
 const getTransactions = async (req, res) => {
-  const { address, startBlock, endBlock } = req.query;
+  const { address, startBlock, endBlock, network: rawNetwork } = req.query;
+  const networkConfig = rpcService.getNetworkConfig(rawNetwork || 'sepolia');
+  const networkKey = networkConfig.id;
 
   // 1. Prevent array/object injection or missing address
   if (typeof address !== 'string' || !address.trim()) {
@@ -31,9 +34,9 @@ const getTransactions = async (req, res) => {
   const hasEnd = typeof endBlock === 'string' && endBlock.trim() !== '';
 
   try {
+    const provider = rpcService.getProvider(networkKey);
     if (!hasStart || !hasEnd) {
-      const provider = rpcService.getProvider();
-      const latestBlockBig = await rpcService.withTimeout(provider.getBlockNumber(), 8000, 'eth_blockNumber');
+      const latestBlockBig = await rpcService.withTimeout(provider.getBlockNumber(), 8000, `eth_blockNumber (${networkConfig.name})`);
       const latestBlock = Number(latestBlockBig);
 
       if (!hasStart && !hasEnd) {
@@ -69,10 +72,10 @@ const getTransactions = async (req, res) => {
       end = Number(trimmedEnd);
     }
   } catch (rpcErr) {
-    safeLogger.error('Failed to resolve latest block from RPC:', rpcErr.message);
+    safeLogger.error(`Failed to resolve latest block from ${networkConfig.name} RPC:`, rpcErr.message);
     const detailMsg = sanitize(rpcErr.message);
     return res.status(503).json({
-      error: `Unable to query latest block height from RPC provider (${detailMsg}). Please check your backend/.env configuration or specify startBlock and endBlock explicitly.`,
+      error: `Unable to query latest block height from ${networkConfig.name} RPC provider (${detailMsg}). Please check your RPC connection or specify startBlock and endBlock explicitly.`,
       details: detailMsg
     });
   }
@@ -106,18 +109,19 @@ const getTransactions = async (req, res) => {
   const timeoutTimer = setTimeout(() => {
     if (!isCompleted && !res.headersSent) {
       isCompleted = true;
-      safeLogger.warn(`Request timeout for address ${normalizedAddress} on blocks ${start}-${end}`);
+      safeLogger.warn(`Request timeout for address ${normalizedAddress} on ${networkConfig.name} blocks ${start}-${end}`);
       res.status(504).json({ error: 'Request timed out while scanning blocks. Please try a smaller block range.' });
     }
   }, REQUEST_TIMEOUT_MS);
 
   try {
-    const provider = rpcService.getProvider();
+    const provider = rpcService.getProvider(networkKey);
     const [transactions, balanceWei, nonce] = await Promise.all([
       transactionService.fetchWalletTransactions({
         address: normalizedAddress,
         startBlock: hasStart ? start : (hasEnd ? start : null),
-        endBlock: hasEnd ? end : (hasStart ? end : null)
+        endBlock: hasEnd ? end : (hasStart ? end : null),
+        network: networkKey
       }),
       provider.getBalance(normalizedAddress).catch(() => 0n),
       provider.getTransactionCount(normalizedAddress).catch(() => 0)
@@ -127,16 +131,19 @@ const getTransactions = async (req, res) => {
     isCompleted = true;
     clearTimeout(timeoutTimer);
 
-    const { ethers } = require('ethers');
-
     return res.json({
       address: normalizedAddress,
-      network: 'Sepolia',
+      network: networkConfig.name,
+      networkId: networkConfig.id,
+      chainId: networkConfig.chainId.toString(),
+      explorerUrl: networkConfig.explorerUrl,
+      currency: networkConfig.currency,
       startBlock: hasStart ? start : (transactions.length > 0 ? Math.min(...transactions.map(t => t.blockNumber)) : 0),
       endBlock: hasEnd ? end : (transactions.length > 0 ? Math.max(...transactions.map(t => t.blockNumber)) : end),
       originalStartBlock: originalStart,
       originalEndBlock: originalEnd,
-      isWindowClamped: false,
+      isWindowClamped,
+      rangeNotice,
       account: {
         balance: ethers.formatEther(balanceWei),
         balanceWei: balanceWei.toString(),
@@ -150,13 +157,13 @@ const getTransactions = async (req, res) => {
     isCompleted = true;
     clearTimeout(timeoutTimer);
 
-    safeLogger.error('API Error in /transactions:', err.message);
+    safeLogger.error(`API Error in /transactions (${networkConfig.name}):`, err.message);
 
     const sanitizedMessage = sanitize(err.message);
     const statusCode = err.message.includes('rate limit') || err.status === 429 ? 429 : 500;
 
     return res.status(statusCode).json({
-      error: 'Failed to retrieve transactions',
+      error: `Failed to retrieve transactions on ${networkConfig.name}`,
       details: sanitizedMessage
     });
   }

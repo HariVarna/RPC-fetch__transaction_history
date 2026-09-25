@@ -1,13 +1,16 @@
 import React from 'react';
 
-const WalletSummary = ({ data }) => {
+const WalletSummary = ({ data, network }) => {
   if (!data) return null;
 
+  const currency = data.currency || 'ETH';
   const balanceEth = data.account?.balance 
-    ? `${Number(data.account.balance).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} ETH`
-    : '0.0000 ETH';
+    ? `${Number(data.account.balance).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} ${currency}`
+    : `0.0000 ${currency}`;
 
-  const etherscanUrl = `https://sepolia.etherscan.io/address/${data.address}`;
+  const explorerBase = data.explorerUrl || (network?.includes('robinhood') ? 'https://robinhoodchain.blockscout.com' : 'https://sepolia.etherscan.io');
+  const explorerUrl = `${explorerBase}/address/${data.address}`;
+  const explorerName = network?.includes('robinhood') ? 'Robinhood Explorer' : 'Etherscan';
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-4 font-mono">
@@ -17,10 +20,10 @@ const WalletSummary = ({ data }) => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] uppercase tracking-widest bg-white text-black px-2 py-0.5 font-bold">
-                Sepolia Account
+                {data.network || 'Account'}
               </span>
               <span className="text-[11px] uppercase tracking-widest border border-white text-white px-2 py-0.5">
-                ● Live RPC
+                ● Chain ID: {data.chainId || 'Live RPC'}
               </span>
             </div>
             <h2 className="text-base sm:text-lg text-white font-mono break-all" title={data.address}>
@@ -29,20 +32,26 @@ const WalletSummary = ({ data }) => {
           </div>
           
           <a
-            href={etherscanUrl}
+            href={explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-1.5 text-xs font-bold px-3.5 py-2 bg-transparent text-white border border-white hover:bg-white hover:text-black transition-colors whitespace-nowrap self-start sm:self-auto"
           >
-            <span>View on Etherscan</span>
+            <span>View on {explorerName}</span>
             <span>↗</span>
           </a>
         </div>
 
+        {data.rangeNotice && (
+          <div className="mb-4 p-3 border border-neutral-700 bg-neutral-950 text-xs text-neutral-300">
+            ℹ️ {data.rangeNotice}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-black p-4 border border-neutral-800">
             <span className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">
-              ETH Balance
+              {currency} Balance
             </span>
             <span className="text-xl font-bold text-white">
               {balanceEth}

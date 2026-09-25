@@ -1,0 +1,15 @@
+{
+  "name": "rpc-fetch-transaction-history-root",
+  "version": "1.0.0",
+  "description": "Root workspace for Multi-Chain Wallet Transaction Explorer",
+  "scripts": {
+    "dev": "npm --prefix sepolia-wallet-explorer/frontend run dev",
+    "dev:backend": "npm --prefix sepolia-wallet-explorer/backend run dev",
+    "dev:frontend": "npm --prefix sepolia-wallet-explorer/frontend run dev",
+    "start": "npm --prefix sepolia-wallet-explorer/backend start",
+    "test": "npm --prefix sepolia-wallet-explorer/backend test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,12 +1,16 @@
 {
   "name": "sepolia-wallet-explorer",
   "version": "1.0.0",
-  "description": "Sepolia Wallet Transaction Explorer",
+  "description": "Multi-Chain Wallet Transaction Explorer (Sepolia & Robinhood Chain)",
   "scripts": {
-    "start:backend": "cd backend && npm run dev",
-    "start:frontend": "cd frontend && npm run dev",
-    "test:backend": "cd backend && npm test",
-    "build:frontend": "cd frontend && npm run build"
+    "dev": "npm --prefix backend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "start": "npm --prefix backend start",
+    "start:backend": "npm --prefix backend run dev",
+    "start:frontend": "npm --prefix frontend run dev",
+    "test:backend": "npm --prefix backend test",
+    "build:frontend": "npm --prefix frontend run build"
   },
   "author": "",
   "license": "ISC"

@@ -118,7 +118,7 @@ const fetchBlockWithRetry = async (provider, blockNumber, options = {}) => {
  * @param {Object} [params.retryOptions] - Optional retry settings (maxRetries, baseDelay, maxDelay, onRetry).
  * @returns {Promise<Array>} Array of matching transactions.
  */
-const scanBlocksForAddress = async ({ address, startBlock, endBlock, concurrency, onProgress, retryOptions = {} }) => {
+const scanBlocksForAddress = async ({ address, startBlock, endBlock, concurrency, onProgress, retryOptions = {}, network = 'sepolia', provider: explicitProvider }) => {
   // 1. Address Validation
   const { valid, normalizedAddress, error } = validateAndNormalizeAddress(address);
   if (!valid) {
@@ -142,7 +142,7 @@ const scanBlocksForAddress = async ({ address, startBlock, endBlock, concurrency
   const envConcurrency = parseInt(process.env.RPC_CONCURRENCY, 10);
   const activeConcurrency = Math.max(1, concurrency || (isNaN(envConcurrency) ? DEFAULT_CONCURRENCY : envConcurrency));
 
-  const provider = getProvider();
+  const provider = explicitProvider || getProvider(network);
   const matchingTransactions = [];
   const seenTxHashes = new Set();
   const totalBlocks = endBlock - startBlock + 1;

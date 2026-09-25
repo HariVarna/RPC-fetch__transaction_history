@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ethers } from 'ethers';
 
-const TransactionTable = ({ transactions, walletAddress }) => {
+const TransactionTable = ({ transactions, walletAddress, explorerUrl = 'https://sepolia.etherscan.io', currency = 'ETH' }) => {
   const [copiedKey, setCopiedKey] = useState(null);
   const [selectedTx, setSelectedTx] = useState(null);
 
@@ -356,12 +356,12 @@ const TransactionTable = ({ transactions, walletAddress }) => {
 
             <div className="flex justify-end pt-3 border-t border-neutral-800">
               <a
-                href={`https://sepolia.etherscan.io/tx/${selectedTx.hash}`}
+                href={`${explorerUrl}/tx/${selectedTx.hash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-white text-black font-bold text-xs uppercase hover:bg-black hover:text-white border border-white transition-colors"
               >
-                View on Sepolia Etherscan ↗
+                View on Explorer ↗
               </a>
             </div>
           </div>

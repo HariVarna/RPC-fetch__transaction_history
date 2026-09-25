@@ -3,7 +3,8 @@ const { safeLogger, sanitize } = require('../utils/sanitizer');
 
 const getRpcStatus = async (req, res) => {
   try {
-    const status = await rpcService.checkRpcHealth();
+    const network = req.query.network || 'sepolia';
+    const status = await rpcService.checkRpcHealth(network);
     return res.json(status);
   } catch (error) {
     safeLogger.error('RPC Status Error:', error.message);
@@ -17,7 +18,6 @@ const getRpcStatus = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getRpcStatus

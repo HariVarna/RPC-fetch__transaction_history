@@ -1,18 +1,18 @@
 import React from 'react';
 import { ethers } from 'ethers';
 
-const TransactionCard = ({ tx, walletAddress }) => {
+const TransactionCard = ({ tx, walletAddress, currency = 'ETH' }) => {
   const isOutgoing = tx.from?.toLowerCase() === walletAddress?.toLowerCase();
   const direction = isOutgoing ? 'OUTGOING' : 'INCOMING';
 
   const formatEth = (weiString) => {
     try {
-      if (!weiString || weiString === '0') return '0 ETH';
+      if (!weiString || weiString === '0') return `0 ${currency}`;
       const eth = ethers.formatEther(weiString);
       const parts = eth.split('.');
-      if (parts.length === 1) return `${parts[0]} ETH`;
+      if (parts.length === 1) return `${parts[0]} ${currency}`;
       const decimals = parts[1].slice(0, 8).replace(/0+$/, '');
-      return decimals ? `${parts[0]}.${decimals} ETH` : `${parts[0]} ETH`;
+      return decimals ? `${parts[0]}.${decimals} ${currency}` : `${parts[0]} ${currency}`;
     } catch {
       return 'Unknown';
     }

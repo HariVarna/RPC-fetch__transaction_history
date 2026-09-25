@@ -3,11 +3,14 @@ const rpcService = require('./rpcService');
 const { safeLogger, sanitize } = require('../utils/sanitizer');
 
 /**
- * Tries to fetch transaction history across large or unrestricted block ranges using public Sepolia indexers.
+ * Tries to fetch transaction history across large or unrestricted block ranges using public block explorers.
  */
-const fetchIndexedTransactions = async (address, startBlock, endBlock) => {
+const fetchIndexedTransactions = async (address, startBlock, endBlock, network = 'sepolia') => {
   try {
-    let url = `https://eth-sepolia.blockscout.com/api?module=account&action=txlist&address=${address}&sort=desc`;
+    const config = rpcService.getNetworkConfig(network);
+    if (!config.blockscoutApi) return null;
+
+    let url = `${config.blockscoutApi}?module=account&action=txlist&address=${address}&sort=desc`;
     if (startBlock !== undefined && startBlock !== null && startBlock !== '') {
       url += `&startblock=${startBlock}`;
     }
@@ -45,7 +48,7 @@ const fetchIndexedTransactions = async (address, startBlock, endBlock) => {
     }
     return null;
   } catch (err) {
-    safeLogger.warn('Indexed history fetch skipped, falling back to JSON-RPC scanner:', err.message);
+    safeLogger.warn(`Indexed history fetch skipped for ${network}, falling back to JSON-RPC scanner:`, err.message);
     return null;
   }
 };
@@ -53,12 +56,12 @@ const fetchIndexedTransactions = async (address, startBlock, endBlock) => {
 /**
  * Fetches transactions and their corresponding receipts for a given address.
  */
-const fetchWalletTransactions = async ({ address, startBlock, endBlock, onProgress, forceRpcScan = false }) => {
+const fetchWalletTransactions = async ({ address, startBlock, endBlock, network = 'sepolia', onProgress, forceRpcScan = false }) => {
   const isLargeOrAll = !startBlock || !endBlock || (Number(endBlock) - Number(startBlock) + 1 > 50);
 
   // 1. If large range or no range given, try comprehensive transaction discovery
   if (!forceRpcScan && isLargeOrAll) {
-    const indexed = await fetchIndexedTransactions(address, startBlock, endBlock);
+    const indexed = await fetchIndexedTransactions(address, startBlock, endBlock, network);
     if (indexed !== null) {
       return indexed;
     }
@@ -72,13 +75,14 @@ const fetchWalletTransactions = async ({ address, startBlock, endBlock, onProgre
     address, 
     startBlock: effectiveStart, 
     endBlock: effectiveEnd, 
+    network,
     onProgress 
   });
 
   // 3. Fetch receipts for each found transaction via JSON-RPC
   const enrichedTransactions = await Promise.all(transactions.map(async (tx) => {
     try {
-      const receipt = await rpcService.getTransactionReceipt(tx.hash);
+      const receipt = await rpcService.getTransactionReceipt(tx.hash, 8000, network);
       
       let status = 'UNKNOWN';
       let receiptData = {

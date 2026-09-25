@@ -1,6 +1,6 @@
 const API_BASE_URL = 'http://localhost:3001/api';
 
-export const fetchWalletTransactions = async (address, startBlock, endBlock) => {
+export const fetchWalletTransactions = async (address, startBlock, endBlock, network = 'sepolia') => {
   try {
     const url = new URL(`${API_BASE_URL}/transactions`);
     if (address) url.searchParams.append('address', address.trim());
@@ -9,6 +9,9 @@ export const fetchWalletTransactions = async (address, startBlock, endBlock) => 
     }
     if (endBlock !== '' && endBlock !== undefined && endBlock !== null) {
       url.searchParams.append('endBlock', endBlock.toString().trim());
+    }
+    if (network) {
+      url.searchParams.append('network', network);
     }
 
     const response = await fetch(url.toString());
@@ -32,4 +35,3 @@ export const fetchWalletTransactions = async (address, startBlock, endBlock) => 
     throw error;
   }
 };
-
